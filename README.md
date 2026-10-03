@@ -1,98 +1,153 @@
 # InternetTest
 
-A browser-based internet speed, connection quality, and packet-loss testing tool.
+Check how fast your internet is—and how well it handles everyday use. InternetTest combines a browser-based speed test, connection-quality analysis, and an independent packet-loss test in a responsive interface.
+
+**[Try the live demo](https://internettest-ruby.vercel.app/)** · **[Open the packet-loss test](https://internettest-ruby.vercel.app/packet-loss)**
+
+![InternetTest results showing download, upload, latency, and connection-quality ratings](docs/images/speed-results.png)
+
+_Screenshot from the local production app displaying a saved sample run. Your results will depend on your connection._
 
 ## Features
 
-- Download/upload speed, ping, jitter, and loaded latency, with smooth live readings.
-- Connection suitability for gaming, streaming, browsing, and video calls; bufferbloat analysis.
-- Independent `/packet-loss` page with Quick, Default, Gaming, Voice call, Video call, and Stability presets.
-- Adjustable message size, frequency, duration, acceptable delay, and optional warm-up.
-- Loss, lateness, delivery delay/jitter, a delivery chart, and dated CSV/JSON exports.
+| Test                   | What you get                                                                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Internet speed**     | Download/upload speed, ping, jitter, and latency during transfers, with smooth live readings.                                   |
+| **Connection quality** | Suitability ratings for gaming, streaming, browsing, and video calls, plus bufferbloat analysis and expandable explanations.    |
+| **Packet loss**        | Sent, received, lost, and late messages; loss/lateness percentages; average delivery delay, delay jitter, and a delivery chart. |
 
-History is visibly marked **Soon** and disabled. No accounts or game-server tests are provided.
+- Run speed and packet-loss tests independently, in either order.
+- Choose **Quick, Default, Gaming, Voice call, Video call, or Stability** presets, or adjust the settings yourself.
+- Configure payload size, frequency, duration, acceptable delay, and optional warm-up.
+- Cancel tests, reset settings, and export packet-loss results as dated **CSV/JSON** files.
+- Use either page on desktop or mobile, with keyboard-accessible controls and status feedback.
 
-## Tech stack
+History is marked **Soon** and disabled. Gaming ratings describe general connection suitability; they do not measure actual game-server ping.
 
-Next.js 16.3.8 App Router, React 19.3, TypeScript, Tailwind CSS 4, Lucide React, and Cloudflare speedtest 1.14.1. Node.js 24.x and pnpm 11.19.0 are pinned; `pnpm-lock.yaml` is the dependency lockfile. Playwright, ESLint, and Prettier are development tools.
+## Screenshots
 
-Vercel Web Analytics records visits/page views, and Vercel Speed Insights collects page performance metrics across both pages. These are mounted once in the root layout; the app sends no custom diagnostic events, measurement results, or TURN credentials to them. Speed Insights measures website performance, separate from the internet speed test.
+### Packet-loss settings
 
-## How the tests work
+![Packet-loss page with preset selector, sliders, warm-up option, and Start button](docs/images/packet-loss.png)
 
-**Speed:** transfers go directly from the browser to Cloudflare infrastructure. The app server does not serve bandwidth payloads. Start is manual; optional Cloudflare result logging is disabled. A complete run can request about 117 MB of payload, plus overhead. Idle ping is HTTP timing, not raw ICMP. Loaded latency can be unavailable when transfers are too short or browser timing is restricted. Final readings come from provider aggregates; animation changes only the display.
+_No speed test is required before using this page._
 
-**Packet loss:** two local WebRTC peers exchange numbered, unordered messages through Metered Standard TURN over verified UDP, with retransmission disabled. Both selected paths must prove UDP relay transport. Settings are validated before credentials are fetched and again before measurement; the server independently validates the same settings. An optional 2-second warm-up is excluded from recorded counts, and a final receive window allows up to 5 seconds for arrivals. Cancel, timeout, and navigation close connections and timers. No deliveries or unverifiable transport produce **Unavailable**, not a fabricated 100% loss result.
+<details>
+<summary>Speed-test start screen</summary>
 
-Loss is `(sent - received) / sent × 100`, counting unique messages. A received message above **acceptable delay** is late and still received; late percentage uses all recorded messages as its denominator. Average delay uses received messages. Jitter is the mean absolute delay change between successive received messages in sequence order. The same browser clock measures delivery between the two local peers; this is relay delivery delay, not game ping or echo-server RTT. Exports contain only validated diagnostic fields and settings.
+![InternetTest start screen with navigation for speed and packet-loss testing](docs/images/speed-test.png)
 
-## Local setup
+</details>
 
-Install Node.js 24 and pnpm 11.19.0, then:
+Screenshots were captured locally from the actual app. No new bandwidth or TURN measurements were run to create them.
+
+## How it works
+
+**Speed:** [Cloudflare's speedtest library](https://github.com/cloudflare/speedtest) transfers data directly between your browser and Cloudflare infrastructure. Tests start manually; final readings use provider aggregates, while animation smooths the display. A complete run can request about **117 MB** of payload, plus overhead. Idle ping is HTTP timing, not ICMP.
+
+**Connection quality:** speed, latency, jitter, and loaded latency help explain likely performance for common activities. Bufferbloat analysis compares idle and loaded latency. Missing measurements remain unavailable.
+
+**Packet loss:** two peers in your browser exchange numbered, unordered WebRTC messages through **Metered Standard TURN over verified UDP**, with retransmission disabled. Optional 2-second warm-up messages are excluded, followed by a final receive window of up to 5 seconds. Unverified transport or no deliveries produces an unavailable result.
+
+<details>
+<summary>Understanding packet-loss results</summary>
+
+- **Loss:** unique sent messages that do not arrive within the receive window. Loss percentage is `(sent - received) / sent × 100`.
+- **Late:** received messages exceeding your **acceptable delay** threshold. A late message is still received and is not also lost. Late percentage uses all recorded messages as its denominator.
+- **Average delay:** mean delivery delay of received messages, measured with the same browser clock.
+- **Delay jitter:** mean absolute delay change between successive received messages in sequence order.
+
+This measures relay message delivery on one route, rather than raw ICMP, exact wire-packet loss, echo-server RTT, or separate upload/download loss.
+
+</details>
+
+## Run locally
+
+You need **Node.js 24.x** and **pnpm 11.19.0**.
 
 ```sh
+git clone https://github.com/notAnKy/internettest.git
+cd internettest
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open [localhost:3000](http://localhost:3000). If pnpm is unavailable, use `npx --yes pnpm@11.19.0` in its place. After installing dependencies, `npm run dev` is also supported. Speed testing needs no environment variables.
+Open [localhost:3000](http://localhost:3000). **Speed testing works without environment variables.** Packet-loss testing requires Metered setup below.
 
-```sh
-pnpm test       # deterministic unit tests, no real network tests
-pnpm lint
-pnpm typecheck
-pnpm build
-pnpm start
-pnpm test:release
+If pnpm is unavailable, replace it with `npx --yes pnpm@11.19.0`. After installing dependencies, `npm run dev` also works.
+
+### Enable packet-loss testing
+
+Copy [.env.example](.env.example) to `.env.local` and fill in these server-side values:
+
+```dotenv
+METERED_APP_NAME=your_app_name
+METERED_TURN_API_KEY=your_credential_api_key
 ```
 
-`test:release` runs units, lint, typecheck, one production build with synthetic secret canaries, a secret/bundle audit, and one production smoke check at 1366px and 390px. It owns and stops its local production server, uses mocked WebRTC for the browser measurement, blocks external speed traffic, and writes no screenshot reports on success. It never uses live TURN credentials. Run it with Edge installed on Windows, or install Playwright Chromium with `pnpm exec playwright install chromium` on other systems. `BROWSER_CHANNEL` can select an installed Chrome browser for QA; it is not a production variable.
+| Variable               | Where to find it                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------------ |
+| `METERED_APP_NAME`     | Your app prefix or full `<app>.metered.live` domain, under **Developers**.                       |
+| `METERED_TURN_API_KEY` | Credential-specific API key under **TURN Server → Credentials → Get credential → Show API Key**. |
 
-## Environment variables and Metered setup
+Create a TURN credential in the [Metered dashboard](https://dashboard.metered.ca/v2) first. Use its credential-specific key rather than the account-wide Developers Secret key. Allow up to two minutes for propagation, then restart the local server. See [Metered's quickstart](https://www.metered.ca/docs/turn-server-service/quickstart/).
 
-Copy `.env.example` to `.env.local`. Only these optional server-side variables are needed for packet loss:
+### Development commands
 
-| Variable               | Value                                                  |
-| ---------------------- | ------------------------------------------------------ |
-| `METERED_APP_NAME`     | Metered app prefix or full `<app>.metered.live` domain |
-| `METERED_TURN_API_KEY` | Credential-specific TURN API key                       |
+| Command             | Purpose                                                                         |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `pnpm dev`          | Development server.                                                             |
+| `pnpm test`         | Deterministic unit tests without real network measurements.                     |
+| `pnpm lint`         | ESLint checks.                                                                  |
+| `pnpm typecheck`    | TypeScript checks.                                                              |
+| `pnpm build`        | Production build.                                                               |
+| `pnpm start`        | Serve the production build.                                                     |
+| `pnpm test:release` | Units, lint, typecheck, build, security scans, and desktop/mobile smoke checks. |
 
-In the [Metered dashboard](https://dashboard.metered.ca/v2), open **TURN Server → Credentials → Create Credential**. On the credential row choose **Get credential → Show API Key**. Find the app domain under **Developers**. Use the credential-specific API key, not the account-wide Developers Secret key. Allow up to two minutes for a new credential to propagate, then restart the local server. See [Metered's quickstart](https://www.metered.ca/docs/turn-server-service/quickstart/).
+The release check uses synthetic secret canaries and mocked WebRTC, blocks external speed traffic, and owns/stops its preview server. It never uses live TURN credentials or writes screenshot reports on success. On Windows it uses installed Edge; elsewhere, install Chromium with `pnpm exec playwright install chromium`. `BROWSER_CHANNEL` is an optional QA setting.
 
-## Security and quota protection
+## Security and usage limits
 
-`.env.local` and other local environment files are ignored. `.env.example` contains placeholders only. Never use a `NEXT_PUBLIC_` prefix for either variable. `/api/turn-credentials` returns a setup boolean on GET; credentials require a same-origin POST with a JSON settings body. The POST has a 1 KiB body limit, strict field/range/budget validation, an 8-second total body/upstream timeout, no-store responses, safe errors, and an allowlist of Standard UDP TURN URLs. PUT/PATCH/DELETE return 405. Upstream errors and credentials are never logged by this endpoint.
+- Local environment files, builds, traces, and QA artifacts are ignored. Commit only the placeholder `.env.example`; never prefix Metered variables with `NEXT_PUBLIC_`.
+- The credential API returns a setup boolean on GET. Credentials require a same-origin POST with validated settings, a **1 KiB** body limit, an **8-second** timeout, no-store responses, and safe errors. It returns only the required UDP ICE configuration.
+- The API key stays server-side. WebRTC necessarily receives runtime TURN usernames/passwords in the browser. These are existing Metered credentials, not newly minted short-lived credentials; rotate or revoke them through Metered.
+- Exports contain diagnostic fields/settings only, excluding credentials and ICE configuration.
 
-The browser necessarily receives the TURN username/password required for WebRTC. The API key remains server-side. Metered returns existing credentials; they are **not newly minted short-lived credentials**. Revoke or rotate them in Metered when needed. Credential values and ICE configuration are excluded from exports, fixtures, and persisted diagnostic results.
+Packet-loss limits are **64–1,200-byte payloads**, **1–60 messages/second**, **5–60 seconds**, **1,800 recorded messages**, **1,920 total messages including warm-up**, and **1 MiB application payload including warm-up**. Protocol/relay overhead adds usage. Both the client and credential endpoint validate settings.
 
-Per-test limits: 64–1200-byte payloads, 1–60 messages/second, 5–60 seconds, at most **1,800 recorded messages**, **1,920 total messages including warm-up**, and **1 MiB application payload including warm-up**. Protocol and relay overhead add usage. Excessive slider combinations cannot start. Only one test runs per page at a time. Quick and 60-second Stability presets remain within these budgets.
+These bounds cannot prevent deliberate TURN credential reuse or forged non-browser requests. Use Metered quota controls and revocation; consider persistent [Vercel WAF rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting) for public traffic, subject to your plan. An endpoint limit cannot stop reused credentials. Use the allowance shown in your Metered dashboard.
 
-These are diagnostic safeguards, **not strong abuse prevention**: a non-browser caller can forge Origin, and a determined client can bypass the UI or reuse runtime TURN credentials. There is no misleading in-memory serverless rate limiter. Use Metered dashboard quota/usage controls and credential revocation; before wide public traffic, consider a persistent edge rule for this POST route using [Vercel WAF rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting), subject to your plan. Edge limits protect endpoint requests, not reused TURN credentials. Use the allowance actually shown in your Metered dashboard; published free allowances differ.
+## Limitations and data
 
-## Limitations
+- Browser timing, background tabs, Wi-Fi, VPNs, and competing traffic affect results. Keep the tab active during tests.
+- Loaded latency may be unavailable when transfers are short or browser timing is restricted.
+- Packet loss tests one Standard relay route, without a selectable city list. Zero observed loss is a short sample, not a long-term guarantee.
+- Cloudflare/Metered availability, TURN quota, UDP access, and browser relay statistics are external dependencies.
+- The latest speed result is stored locally in your browser. Packet-loss results and credentials are not persisted by the app; exports stay where you save them.
+- Vercel Analytics collects visits/page views; Speed Insights collects website performance metrics, separately from the internet speed test. The app sends no custom diagnostic-result events or TURN credentials to either SDK. Content blockers can prevent collection.
 
-- Gaming quality means general connection suitability, **not actual game-server ping**.
-- Packet loss is WebRTC message delivery over one TURN route, **not raw ICMP**, exact wire-packet loss, or separate upload/download loss. There is one Standard relay route, not a selectable city list.
-- Zero observed loss is a sample, not a long-term stability guarantee. Browser scheduling, background tabs, VPNs, Wi-Fi, and other traffic affect results. Keep the test tab active.
-- UDP access, browser relay statistics, Cloudflare/Metered availability, and TURN quota are external dependencies. Missing measurements stay unavailable.
-- Recent speed results are saved in this browser's local storage; packet-loss results and credentials are not persisted by the app. Export files remain wherever the user saves them.
+## Deploy to Vercel
 
-## Deployment to Vercel
+Import your repository using the [Next.js preset](https://vercel.com/docs/frameworks/nextjs), **Node.js 24.x**, and repository root:
 
-Use the standard [Next.js framework preset](https://vercel.com/docs/frameworks/nextjs), repository root, and [Node.js 24.x](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions). To install the exact pinned package-manager version without extra environment flags, set:
+| Setting          | Value                                              |
+| ---------------- | -------------------------------------------------- |
+| Install command  | `npx --yes pnpm@11.19.0 install --frozen-lockfile` |
+| Build command    | `npm run build`                                    |
+| Output directory | Next.js default                                    |
 
-- Install command: `npx --yes pnpm@11.19.0 install --frozen-lockfile`
-- Build command: `npm run build`
-- Output directory: leave the Next.js default.
+For packet loss, add **only `METERED_APP_NAME` and `METERED_TURN_API_KEY`** to the Production environment. Preview deployments need them only if they should support packet loss. Treat the key as sensitive and redeploy after changing variables.
 
-Add **only** `METERED_APP_NAME` and `METERED_TURN_API_KEY` in Vercel's **Production** environment. Add them separately to Preview only if preview deployments should support packet loss. Treat the API key as sensitive. Redeploy after changing variables. No public secrets, site URL, database, account Secret key, or extra production variables are required.
+The credential route runs as a Node.js function; WebRTC measurements run in the browser. Both `/` and `/packet-loss` support direct visits and refreshes. A static-only export cannot serve the credential endpoint.
 
-Enable Web Analytics and Speed Insights for the project in the Vercel dashboard. Both SDKs are already included; they require no extra environment variables. After deployment, visit `/` and `/packet-loss` to start collecting data. Content blockers can prevent collection. See the official [Web Analytics setup](https://vercel.com/docs/analytics/quickstart) and [Speed Insights setup](https://vercel.com/docs/speed-insights/quickstart).
+The [Analytics](https://vercel.com/docs/analytics/quickstart) and [Speed Insights](https://vercel.com/docs/speed-insights/quickstart) SDKs are included. Enable the dashboard features, deploy, and visit both pages to begin collecting data. Neither requires extra environment variables.
 
-`/` and `/packet-loss` are real App Router pages, so direct visits and refreshes work. The credential route uses a Node.js serverless function with a 15-second platform duration declaration; its own 8-second timeout ends requests earlier. WebRTC traffic runs in the browser, so a 60-second diagnostic does not hold the serverless function open. No localhost URLs, Windows paths, production filesystem writes, or persistent processes are required in runtime code. A static-only export would not support the credential route.
+## Built with
 
-Before publishing, run `pnpm test:release`, review `git status`, and leave `.env.local`, `.next`, `node_modules`, `.pnpm-store`, `artifacts`, browser traces/profiles, and `.vercel` out of commits. This hardening task does not commit, push, or deploy.
+Next.js App Router · React · TypeScript · Tailwind CSS · Lucide React · Cloudflare speedtest · Metered TURN · Vercel Analytics / Speed Insights
 
-## License and notices
+ESLint, Prettier, and Playwright support development and verification. Dependency versions are recorded in [package.json](package.json) and [pnpm-lock.yaml](pnpm-lock.yaml).
 
-InternetTest original code is [MIT licensed](LICENSE). Adapted Cloudflare logic retains its complete original MIT notice. [Third-party notices](THIRD_PARTY_NOTICES.md) identify the adaptation and runtime packages; full permission notices, including Lucide/Feather, ship at `/third-party-notices.txt`. No code was copied from packetlosstest.com.
+## License
+
+InternetTest's original code is [MIT licensed](LICENSE). Adapted Cloudflare logic retains its original MIT notice. See [third-party notices](THIRD_PARTY_NOTICES.md) for attribution and [full permission notices](public/third-party-notices.txt).
