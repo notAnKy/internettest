@@ -12,3 +12,5 @@ InternetTest original code is MIT licensed in [LICENSE](LICENSE). Third-party co
 | Tailwind CSS                           | 4.3.3   | MIT       | [Source](https://github.com/tailwindlabs/tailwindcss) |
 
 Cloudflare adaptation: `src/lib/packet-loss/engine.ts`; unmodified license: `src/lib/packet-loss/CLOUDFLARE-LICENSE.txt`. Installed dependencies retain their bundled license files. Development tools and transitive dependencies retain their package licenses; dependency versions are pinned in `pnpm-lock.yaml`.
+
+Vercel Web Analytics (`@vercel/analytics` 2.0.1) is MIT licensed; [source](https://github.com/vercel/analytics). Vercel Speed Insights (`@vercel/speed-insights` 2.0.0) is Apache-2.0 licensed; [source](https://github.com/vercel/speed-insights). Their complete installed license texts are also included in `public/third-party-notices.txt`. Neither package's source is modified.

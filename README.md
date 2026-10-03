@@ -16,6 +16,8 @@ History is visibly marked **Soon** and disabled. No accounts or game-server test
 
 Next.js 16.3.8 App Router, React 19.3, TypeScript, Tailwind CSS 4, Lucide React, and Cloudflare speedtest 1.14.1. Node.js 24.x and pnpm 11.19.0 are pinned; `pnpm-lock.yaml` is the dependency lockfile. Playwright, ESLint, and Prettier are development tools.
 
+Vercel Web Analytics records visits/page views, and Vercel Speed Insights collects page performance metrics across both pages. These are mounted once in the root layout; the app sends no custom diagnostic events, measurement results, or TURN credentials to them. Speed Insights measures website performance, separate from the internet speed test.
+
 ## How the tests work
 
 **Speed:** transfers go directly from the browser to Cloudflare infrastructure. The app server does not serve bandwidth payloads. Start is manual; optional Cloudflare result logging is disabled. A complete run can request about 117 MB of payload, plus overhead. Idle ping is HTTP timing, not raw ICMP. Loaded latency can be unavailable when transfers are too short or browser timing is restricted. Final readings come from provider aggregates; animation changes only the display.
@@ -84,6 +86,8 @@ Use the standard [Next.js framework preset](https://vercel.com/docs/frameworks/n
 - Output directory: leave the Next.js default.
 
 Add **only** `METERED_APP_NAME` and `METERED_TURN_API_KEY` in Vercel's **Production** environment. Add them separately to Preview only if preview deployments should support packet loss. Treat the API key as sensitive. Redeploy after changing variables. No public secrets, site URL, database, account Secret key, or extra production variables are required.
+
+Enable Web Analytics and Speed Insights for the project in the Vercel dashboard. Both SDKs are already included; they require no extra environment variables. After deployment, visit `/` and `/packet-loss` to start collecting data. Content blockers can prevent collection. See the official [Web Analytics setup](https://vercel.com/docs/analytics/quickstart) and [Speed Insights setup](https://vercel.com/docs/speed-insights/quickstart).
 
 `/` and `/packet-loss` are real App Router pages, so direct visits and refreshes work. The credential route uses a Node.js serverless function with a 15-second platform duration declaration; its own 8-second timeout ends requests earlier. WebRTC traffic runs in the browser, so a 60-second diagnostic does not hold the serverless function open. No localhost URLs, Windows paths, production filesystem writes, or persistent processes are required in runtime code. A static-only export would not support the credential route.
 
