@@ -1,0 +1,10 @@
+{
+  "latencyMs": 36.000000000116415,
+  "jitterMs": 12.740520833331463,
+  "downloadMbps": 42.5679573832468,
+  "uploadMbps": 15.048281325056081,
+  "downloadLoadedLatencyMs": 88.67968750010846,
+  "uploadLoadedLatencyMs": 36.679687499642796,
+  "timestamp": "2026-10-03T16:46:45.909Z",
+  "durationMs": 38034.200000000186
+}
